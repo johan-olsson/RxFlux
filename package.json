@@ -1,20 +1,22 @@
 {
   "name": "rxflux",
-  "version": "0.0.0",
-  "description": "The best module ever.",
+  "version": "0.0.1",
+  "description": "Flux flow built on Reactive Extensions.",
   "author": {
     "name": "Johan Olsson",
     "email": "johano.js@gmail.com"
   },
-  "repository": "johan-olsson/rxflux",
+  "repository": "johan-olsson/RxFlux",
   "license": "MIT",
   "files": [
     "index.js",
     "cli.js"
   ],
   "keywords": [
-    "rxflux",
-    ""
+    "RxFlux",
+    "React",
+    "Flux",
+    "reactive extensions"
   ],
   "dependencies": {
     "meow": "^3.1.0",

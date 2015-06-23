@@ -27,8 +27,8 @@ $ npm run browser
 MIT © [Johan Olsson]()
 
 
-[npm-image]: https://badge.fury.io/js/RxFlux.svg
-[npm-url]: https://npmjs.org/package/RxFlux
+[npm-image]: https://badge.fury.io/js/rxflux.svg
+[npm-url]: https://npmjs.org/package/rxflux
 [travis-image]: https://travis-ci.org/johan-olsson/RxFlux.svg?branch=master
 [travis-url]: https://travis-ci.org/johan-olsson/RxFlux
 [daviddm-image]: https://david-dm.org/johan-olsson/RxFlux.svg?theme=shields.io
