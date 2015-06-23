@@ -45,4 +45,5 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask('default', ['jshint', 'mochacli']);
+  grunt.registerTask('test', ['mochacli']);
 };

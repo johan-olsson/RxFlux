@@ -3,23 +3,49 @@
 var rx = require('rx');
 var uuid = require('uuid-js');
 
-var Store = function() {
-    
+var Store = function () {
+
     var store = [];
     var StoreStream = new rx.Subject();
 
     this.emitChange = function (result) {
 
         StoreStream.onNext(result);
-    }
+    };
 
     this.insert = function (item) {
 
         item._id = uuid.create(1).hex;
         store.push(item);
 
-        return this.last();
-    }
+        return [this.last()];
+    };
+
+    this.replace = function (query, to) {
+
+        var result = store.filter(function (crate) {
+
+            for (var key in query) {
+                if (crate[key] !== query[key])
+                    return false;
+            }
+
+            for (var key in crate)
+                if (key !== '_id')
+                    delete crate[key];
+            
+            for (var key in to)
+                crate[key] = to[key];
+
+            return true;
+
+        })
+
+        if (result.length)
+            return result;
+
+        return [];
+    };
 
     this.update = function (query, to) {
 
@@ -40,16 +66,15 @@ var Store = function() {
         if (result.length)
             return result;
 
-        return null;
-    }
+        return [];
+    };
 
     this.find = function (query) {
 
         if (typeof query === 'undefined')
             if (store.length)
                 return store;
-            return null;
-
+        return [];
 
         var result = store.filter(function (crate) {
 
@@ -64,12 +89,12 @@ var Store = function() {
         if (result.length)
             return result;
 
-        return null;
+        return [];
 
-    }
-    
+    };
+
     this.delete = function (query) {
-        
+
         if (typeof query === 'undefined')
             return store = [];
 
@@ -83,67 +108,67 @@ var Store = function() {
 
         })
 
-        return null;
-    }
+        return [];
+    };
 
     this.first = function () {
         if (store[0])
             return store[0];
 
         return null;
-    }
+    };
 
     this.last = function () {
         if (store[store.length - 1])
             return store[store.length - 1];
 
         return null;
-    }
+    };
 
     this.Stream = StoreStream;
-}
+};
 
 module.exports = new function () {
 
     var ActionStream = new rx.Subject();
-    
+
     this.Dispatcher = ActionStream;
 
     this.Dispatcher.emit = function (target, type) {
-        
+
         ActionStream.onNext({
             target: target,
             type: type,
             arguments: Array.prototype.splice.call(arguments, 2, arguments.length)
         })
-    }
+    };
 
     this.createStore = function (options) {
-        
+
         var store = new Store();
-        
+
         for (var key in options)
             store[key] = options[key];
 
         if (store.actions instanceof Function)
             store.actions = store.actions.call(store);
-        
-        var actions = store.actions;   
-        
+
+        var actions = store.actions;
+
         this.Dispatcher.subscribe(function (action) {
 
             if (action.target !== store.id)
                 return false;
 
             if (typeof store.actions[action.type] === 'function') {
-                store.emitChange(store.actions[action.type].apply(store, action.arguments));
-                
+                store.actions[action.type].apply(store, action.arguments).forEach(function(change) {
+                    store.emitChange(change)
+                });
+
             }
 
-        })
-        
+        });
+
         return store;
-    }
-}
-
-
+    };
+};
