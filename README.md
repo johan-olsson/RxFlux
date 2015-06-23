@@ -30,6 +30,6 @@ MIT © [Johan Olsson]()
 [npm-image]: https://badge.fury.io/js/rxflux.svg
 [npm-url]: https://npmjs.org/package/rxflux
 [travis-image]: https://travis-ci.org/johan-olsson/rxflux.svg?branch=master
-[travis-url]: https://travis-ci.org/johan-olsson/rxflux
+[travis-url]: https://travis-ci.org/johan-olsson/RxFlux
 [daviddm-image]: https://david-dm.org/johan-olsson/rxflux.svg?theme=shields.io
 [daviddm-url]: https://david-dm.org/johan-olsson/rxflux
