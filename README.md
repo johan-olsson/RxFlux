@@ -14,13 +14,6 @@ $ npm install --save rxflux
 
 ```js
 var rxflux = require('rxflux');
-
-rxflux('Rainbow');
-```
-
-```sh
-$ npm install --global rxflux
-$ rxflux --help
 ```
 
 ```sh
