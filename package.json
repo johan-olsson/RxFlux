@@ -19,7 +19,7 @@
     "reactive extensions"
   ],
   "dependencies": {
-    "meow": "^3.1.0",
+    "meow": "3.1.0",
     "rx": "^2.5.3",
     "uuid-js": "^0.7.5"
   },
