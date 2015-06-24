@@ -1,174 +1,47 @@
 'use strict';
 
 var rx = require('rx');
-var uuid = require('uuid-js');
 
-var Store = function () {
-
-    var store = [];
-    var StoreStream = new rx.Subject();
-
-    this.emitChange = function (result) {
-
-        StoreStream.onNext(result);
-    };
-
-    this.insert = function (item) {
-
-        item._id = uuid.create(1).hex;
-        store.push(item);
-
-        return [this.last()];
-    };
-
-    this.replace = function (query, to) {
-
-        var result = store.filter(function (crate) {
-
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
-
-            for (var key in crate)
-                if (key !== '_id')
-                    delete crate[key];
-            
-            for (var key in to)
-                crate[key] = to[key];
-
-            return true;
-
-        })
-
-        if (result.length)
-            return result;
-
-        return [];
-    };
-
-    this.update = function (query, to) {
-
-        var result = store.filter(function (crate) {
-
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
-
-            for (var key in to)
-                crate[key] = to[key];
-
-            return true;
-
-        })
-
-        if (result.length)
-            return result;
-
-        return [];
-    };
-
-    this.find = function (query) {
-
-        if (typeof query === 'undefined')
-            if (store.length)
-                return store;
-        return [];
-
-        var result = store.filter(function (crate) {
-
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
-            return true;
-
-        })
-
-        if (result.length)
-            return result;
-
-        return [];
-
-    };
-
-    this.delete = function (query) {
-
-        if (typeof query === 'undefined')
-            return store = [];
-
-        store = store.filter(function (crate) {
-
-            for (var key in query) {
-                if (crate[key] === query[key])
-                    return false;
-            }
-            return true;
-
-        })
-
-        return [];
-    };
-
-    this.first = function () {
-        if (store[0])
-            return store[0];
-
-        return null;
-    };
-
-    this.last = function () {
-        if (store[store.length - 1])
-            return store[store.length - 1];
-
-        return null;
-    };
-
-    this.Stream = StoreStream;
-};
+var Store = require('./lib/Store')
 
 module.exports = new function () {
 
-    var ActionStream = new rx.Subject();
+    var actions = [];
 
-    this.Dispatcher = ActionStream;
+    this.Constants = {};
+    this.ActionStream = this.Dispatcher = new rx.Subject();
+    this.Dispatcher.emit = function (name) {
 
-    this.Dispatcher.emit = function (target, type) {
-
-        ActionStream.onNext({
-            target: target,
-            type: type,
-            arguments: Array.prototype.splice.call(arguments, 2, arguments.length)
+        this.onNext({
+            name: name,
+            arguments: Array.prototype.splice.call(arguments, 1, arguments.length)
         })
     };
 
-    this.createStore = function (options) {
+    this.ActionStream.subscribe(function (action) {
+        if (actions[action.name])
+            actions[action.name].apply(this, action.arguments);
+    })
 
-        var store = new Store();
+    this.createAction = function (name, callback) {
 
-        for (var key in options)
-            store[key] = options[key];
+        actions[name] = callback;
+        return this;
+    };
 
-        if (store.actions instanceof Function)
-            store.actions = store.actions.call(store);
+    this.createStore = function (name, options) {
 
-        var actions = store.actions;
+        return new Store(name, options);
+    };
 
-        this.Dispatcher.subscribe(function (action) {
+    this.setConstants = function () {
 
-            if (action.target !== store.id)
-                return false;
-
-            if (typeof store.actions[action.type] === 'function') {
-                store.actions[action.type].apply(store, action.arguments).forEach(function(change) {
-                    store.emitChange(change)
-                });
-
-            }
-
-        });
-
-        return store;
+        Array.prototype.forEach.call(arguments, function(constant) {
+        
+            this.Constants[constant] = constant;
+            
+        }.bind(this))
+        
+        return this;
     };
 };

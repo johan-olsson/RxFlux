@@ -2,20 +2,27 @@
 var assert = require('assert');
 var RxFlux = require('../');
 
-var Store = RxFlux.createStore({
-    id: 'STORE',
-    actions: function() {
-        return {
-            insert: this.insert,
-            update: this.update,
-            replace: this.replace,
-            delete: this.delete
-        }
-    }
+var Store = RxFlux.createStore('STORE', {
+    localStorage: true
 })
+
+RxFlux
+    .createAction('insert', function(data) {
+        Store.insert(data)
+    })
+    .createAction('delete', function(query) {
+        Store.delete(query)
+    })
+    .createAction('update', function() {
+        Store.update.apply(Store, arguments)
+    })
+    .createAction('replace', function() {
+        Store.replace.apply(Store, arguments)
+    })
 
 
 describe('ReFlux reactive store Flux flow.', function() {
+    
     it('should add to queue stream when action is fired.', function(done) {
     
         Store.Stream.forEach(function(change) {
@@ -24,9 +31,8 @@ describe('ReFlux reactive store Flux flow.', function() {
                 if (change.test == 'fest')
                     done();
         })
-        //.dispose()
         
-        RxFlux.Dispatcher.emit('STORE', 'insert', {
+        RxFlux.Dispatcher.emit('insert', {
         
             foo: 'bar',
             test: 'fest'
@@ -36,7 +42,7 @@ describe('ReFlux reactive store Flux flow.', function() {
     
     it('should update all matching enteries when running update.', function(done) {
     
-        RxFlux.Dispatcher.emit('STORE', 'insert', {
+        RxFlux.Dispatcher.emit('insert', {
         
             foo: 'bar',
             test: 'fest2'
@@ -60,7 +66,7 @@ describe('ReFlux reactive store Flux flow.', function() {
             
         })
         
-        RxFlux.Dispatcher.emit('STORE', 'update', {
+        RxFlux.Dispatcher.emit('update', {
             foo: 'bar'
         }, {
             test: 'hest'
@@ -85,7 +91,7 @@ describe('ReFlux reactive store Flux flow.', function() {
             
         })
         
-        RxFlux.Dispatcher.emit('STORE', 'replace', {
+        RxFlux.Dispatcher.emit('replace', {
             foo: 'bar'
         }, {
             lol: 'pop'
@@ -110,13 +116,10 @@ describe('ReFlux reactive store Flux flow.', function() {
             
         }, 30)
 
-        RxFlux.Dispatcher.emit('STORE', 'delete', {
+        RxFlux.Dispatcher.emit('delete', {
             lol: 'pop'
         })
-    })
-    
-
-    
+    }) 
 })
 
 
