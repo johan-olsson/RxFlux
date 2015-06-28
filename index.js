@@ -2,7 +2,7 @@
 
 var rx = require('rx');
 
-var Store = require('./lib/Store')
+var Store = require('./Store')
 
 module.exports = new function () {
 
