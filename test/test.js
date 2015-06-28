@@ -6,6 +6,10 @@ var Store = RxFlux.createStore('STORE', {
     localStorage: true
 })
 
+var UpsertStore = RxFlux.createStore('UPSERT_STORE', {
+    localStorage: true
+})
+
 RxFlux
     .createAction('insert', function(data) {
         Store.insert(data)
@@ -95,6 +99,45 @@ describe('ReFlux reactive store Flux flow.', function() {
             foo: 'bar'
         }, {
             lol: 'pop'
+        })
+    })
+    
+    it('should upsert should update/insert correctly.', function(done) {
+
+        
+    
+        UpsertStore.Stream
+        .debounce(60)
+        .forEach(function() {
+
+            var find = UpsertStore.find();
+
+            assert.equal(find.length, 2)
+
+            delete find[0]._id;
+            delete find[1]._id;
+
+            assert.equal(JSON.stringify(find), JSON.stringify([{foo:'bar',id:2}, {foo:'foo',id:1}]))
+            done();
+        })
+        
+        UpsertStore.insert({
+            foo: 'bar',
+            id: 0
+        })
+        
+        UpsertStore.upsert({
+            foo: 'foo'
+        }, {
+            foo: 'foo',
+            id: 1
+        })
+        
+        UpsertStore.upsert({
+            foo: 'bar'
+        }, {
+            foo: 'bar',
+            id: 2
         })
     })
     

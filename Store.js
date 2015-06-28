@@ -70,6 +70,31 @@ module.exports = function (name, options) {
 
         this.emitChange(result);
     };
+    
+    this.upsert = function(query, to) {
+
+        var result = store.filter(function (crate) {
+
+            for (var key in query) {
+                if (crate[key] !== query[key])
+                    return false;
+            }
+
+            for (var key in to)
+                crate[key] = to[key];
+
+            return true;
+
+        })
+
+        if (!result.length) {
+            to._id = uuid.create(1).hex;
+            result = [store.push(to)];
+        }
+            
+
+        this.emitChange(result);
+    }
 
     this.find = function (query) {
 

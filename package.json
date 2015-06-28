@@ -1,6 +1,6 @@
 {
   "name": "rxflux",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Flux flow built on Reactive Extensions.",
   "author": {
     "name": "Johan Olsson",
@@ -10,7 +10,8 @@
   "license": "MIT",
   "files": [
     "index.js",
-    "cli.js"
+    "cli.js",
+    "Store.js"
   ],
   "keywords": [
     "RxFlux",
