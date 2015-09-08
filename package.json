@@ -1,6 +1,6 @@
 {
   "name": "rxflux",
-  "version": "0.0.6",
+  "version": "0.1.8",
   "description": "Flux flow built on Reactive Extensions.",
   "author": {
     "name": "Johan Olsson",
@@ -20,6 +20,7 @@
     "reactive extensions"
   ],
   "dependencies": {
+    "clone": "^1.0.2",
     "meow": "3.1.0",
     "rx": "2.5.3",
     "uuid-js": "0.7.5"

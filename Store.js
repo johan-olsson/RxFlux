@@ -5,157 +5,264 @@ var uuid = require('uuid-js');
 
 module.exports = function (name, options) {
 
-    var StoreStream = new rx.Subject();
-    var store = [];
-    
+  var store = [];
+  var StoreStreams = [];
+  var timer;
+  
+  var Result = function () {
+    this.joinAll = function (joinStore, query, joinCallback) {
+      
+      this.forEach(function (crate) {
+        
+        if (query instanceof Function)
+          query = query(crate);
+        
+        joinCallback(crate, joinStore.find(query))
+        
+      })
+      return this;
+    }
+    return this;
+  }
+
+  if (typeof localStorage !== 'undefined' && options.localStorage)
+    store = JSON.parse(localStorage.getItem(name)) || [];
+
+  this.observe = function () {
+    var stream = new rx.Subject();
+    StoreStreams.push(stream);
+    return stream;
+  }
+
+  this.emitChange = function (result) {
+
+
     if (typeof localStorage !== 'undefined' && options.localStorage)
-        store = JSON.parse(localStorage.getItem(name)) || [];
-        
-    this.emitChange = function (result) {
+      localStorage.setItem(name, JSON.stringify(store));
 
-        if (typeof localStorage !== 'undefined' && options.localStorage)
-            localStorage.setItem(name, JSON.stringify(store));
+    if (options.debounce)
+      clearTimeout(timer);
 
-        result.forEach(function(change) {
-            StoreStream.onNext(change);
-        })     
-    };
+    timer = setTimeout(function () {
+      result.forEach(function (change) {
+        StoreStreams.forEach(function (StoreStream, key) {
 
-    this.insert = function (item) {
-
-        item._id = uuid.create(1).hex;
-        store.push(item);
-        
-        this.emitChange([this.last()]);
-    };
-
-    this.replace = function (query, to) {
-
-        var result = store.filter(function (crate) {
-
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
-
-            for (var key in crate)
-                if (key !== '_id')
-                    delete crate[key];
-            
-            for (var key in to)
-                crate[key] = to[key];
-
-            return true;
-
+          if (StoreStream.isDisposed)
+            return delete StoreStream[key];
+          StoreStream.onNext(change);
         })
+      })
+    }, (options.debounce) ? options.debounce : 0)
+  };
 
-        this.emitChange(result);
-    };
+  this.insert = function (item) {
 
-    this.update = function (query, to) {
+    item._id = uuid.create(1).hex;
+    store.push(item);
 
-        var result = store.filter(function (crate) {
+    this.emitChange([this.last()]);
+  };
 
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
+  this.replace = function (query, to) {
 
-            for (var key in to)
-                crate[key] = to[key];
+    var result = store.filter(function (crate) {
 
-            return true;
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
 
-        })
+      for (var key in crate)
+        if (key !== '_id')
+          delete crate[key];
 
-        this.emitChange(result);
-    };
-    
-    this.upsert = function(query, to) {
+      for (var key in to)
+        crate[key] = to[key];
 
-        var result = store.filter(function (crate) {
+      return true;
 
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
+    })
 
-            for (var key in to)
-                crate[key] = to[key];
+    this.emitChange(result);
+  };
 
-            return true;
+  this.update = function (query, to) {
 
-        })
+    var result = store.filter(function (crate) {
 
-        if (!result.length) {
-            to._id = uuid.create(1).hex;
-            result = [store.push(to)];
-        }
-            
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
 
-        this.emitChange(result);
+      for (var key in to)
+        crate[key] = to[key];
+
+      return true;
+
+    })
+
+    this.emitChange(result);
+  };
+
+  this.upsert = function (query, to) {
+
+    var result = store.filter(function (crate) {
+
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
+
+      for (var key in to)
+        crate[key] = to[key];
+
+      return true;
+
+    })
+
+    if (!result.length) {
+      to._id = uuid.create(1).hex;
+      store.push(to);
+      result = [to];
     }
 
-    this.find = function (query) {
+    this.emitChange(result);
+  }
 
-        if (typeof query === 'undefined')
-            if (store.length)
-                return store;
-        return [];
+  this.find = function (query) {
 
-        var result = store.filter(function (crate) {
+    if (typeof query === 'undefined') {
+      if (store.length)
+        return store;
+      return [];
+    }
 
-            for (var key in query) {
-                if (crate[key] !== query[key])
-                    return false;
-            }
+    var result = store.filter(function (crate) {
+
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
+      return true;
+
+    })
+
+    return Result.call(result);
+  };
+
+  this.delete = function (query) {
+
+    if (typeof query === 'undefined') {
+      store = [];
+      return this.emitChange([{}]);
+    }
+
+    store = store.filter(function (crate) {
+
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
             return true;
+        } else if (crate[key] != query[key])
+          return true;
+      }
+      return false;
 
-        })
+    })
 
-        this.emitChange(result);
-    };
+    this.emitChange([{}]);
+  };
 
-    this.delete = function (query) {
 
-        if (typeof query === 'undefined')
-            return store = [];
+  this.filter = function (query) {
 
-        store = store.filter(function (crate) {
+    if (typeof query === 'undefined')
+      return store = store;
 
-            for (var key in query) {
-                if (crate[key] === query[key])
-                    return false;
-            }
-            return true;
+    store = store.filter(function (crate) {
 
-        })
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
+      return true;
 
-        this.emitChange([]);
-    };
+    })
 
-    
-    
-    this.length = function() {
-    
-        return store.length;
-        
-    };
-    
-    this.first = function () {
-        if (store[0])
-            return store[0];
+    this.emitChange([{}]);
+  };
 
-        return null;
-    };
+  this.length = function () {
 
-    this.last = function () {
-        if (store[store.length - 1])
-            return store[store.length - 1];
+    return store.length;
 
-        return null;
-    };
+  };
 
-    this.Stream = StoreStream;
+  this.first = function (query) {
+    var result = null;
+
+    if (typeof query === 'undefined') {
+      if (store.length)
+        return store[0];
+      return result;
+    }
+
+    store.some(function (crate) {
+
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
+      result = crate;
+      return true;
+
+    })
+
+    return result;
+  };
+
+  this.last = function (query) {
+    var result = null;
+
+    if (typeof query === 'undefined') {
+      if (store.length)
+        return store[store.length - 1];
+      return result;
+    }
+
+    store.reverse().some(function (crate) {
+
+      for (var key in query) {
+        if (query[key] instanceof Array) {
+          if (query[key].indexOf(crate[key]) == -1)
+            return false;
+        } else if (crate[key] != query[key])
+          return false;
+      }
+      result = crate;
+      return true;
+
+    })
+
+    return result;
+  };
 };
-
