@@ -7,6 +7,7 @@ module.exports = function (name, options) {
 
   var store = [];
   var StoreStreams = [];
+  var options = options || {};
   var timer;
   
   var Result = function () {
@@ -142,9 +143,7 @@ module.exports = function (name, options) {
   this.find = function (query) {
 
     if (typeof query === 'undefined') {
-      if (store.length)
-        return store;
-      return [];
+      Result.call(store);
     }
 
     var result = store.filter(function (crate) {
